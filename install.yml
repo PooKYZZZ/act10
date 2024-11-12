@@ -1,9 +1,14 @@
 - hosts: servers
   become: true
   roles:
-    - servers
+    - elasticsearch
 
 - hosts: server_centOS
   become: true
   roles:
-    - server_centOS
+    - kibana
+
+- hosts: file_server
+  become: true
+  roles:
+    - logstash

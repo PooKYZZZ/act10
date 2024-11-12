@@ -1,0 +1,52 @@
+---
+- name: Install dependencies for Logstash on Ubuntu
+  apt:
+    name: openjdk-11-jre
+    state: present
+
+- name: Download Logstash tarball
+  get_url:
+    url: https://artifacts.elastic.co/downloads/logstash/logstash-8.10.2-linux-x86_64.tar.gz
+    dest: /tmp/logstash.tar.gz
+
+- name: Extract Logstash tarball
+  unarchive:
+    src: /tmp/logstash.tar.gz
+    dest: /opt/
+    remote_src: yes
+
+- name: Create symbolic link for Logstash
+  file:
+    src: /opt/logstash-8.10.2
+    dest: /opt/logstash
+    state: link
+
+- name: Copy Logstash service file
+  copy:
+    content: |
+      [Unit]
+      Description=Logstash
+      Documentation=https://www.elastic.co/guide/en/logstash/current/index.html
+      Wants=network-online.target
+      After=network-online.target
+
+      [Service]
+      User=root
+      ExecStart=/opt/logstash/bin/logstash
+      Restart=always
+      LimitNOFILE=65536
+
+      [Install]
+      WantedBy=multi-user.target
+    dest: /etc/systemd/system/logstash.service
+
+- name: Reload systemd daemon
+  systemd:
+    daemon_reload: yes
+
+- name: Start and enable Logstash
+  systemd:
+    name: logstash
+    enabled: yes
+    state: started
+

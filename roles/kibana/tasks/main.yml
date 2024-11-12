@@ -1,0 +1,51 @@
+---
+- name: Install dependencies for Kibana on CentOS
+  yum:
+    name: java-11-openjdk
+    state: present
+
+- name: Download Kibana tarball
+  get_url:
+    url: https://artifacts.elastic.co/downloads/kibana/kibana-8.10.2-linux-x86_64.tar.gz
+    dest: /tmp/kibana.tar.gz
+
+- name: Extract Kibana tarball
+  unarchive:
+    src: /tmp/kibana.tar.gz
+    dest: /opt/
+    remote_src: yes
+
+- name: Create symbolic link for Kibana
+  file:
+    src: /opt/kibana-8.10.2
+    dest: /opt/kibana
+    state: link
+
+- name: Copy Kibana service file
+  copy:
+    content: |
+      [Unit]
+      Description=Kibana
+      Documentation=https://www.elastic.co/guide/en/kibana/current/index.html
+      Wants=network-online.target
+      After=network-online.target
+
+      [Service]
+      User=root
+      ExecStart=/opt/kibana/bin/kibana
+      Restart=always
+      LimitNOFILE=65536
+
+      [Install]
+      WantedBy=multi-user.target
+    dest: /etc/systemd/system/kibana.service
+
+- name: Reload systemd daemon
+  systemd:
+    daemon_reload: yes
+
+- name: Start and enable Kibana
+  systemd:
+    name: kibana
+    enabled: yes
+    state: started

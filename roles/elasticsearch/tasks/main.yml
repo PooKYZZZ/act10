@@ -1,0 +1,51 @@
+---
+- name: Install dependencies for Elasticsearch on Ubuntu
+  apt:
+    name: openjdk-11-jre
+    state: present
+
+- name: Download Elasticsearch tarball
+  get_url:
+    url: https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-8.10.2-linux-x86_64.tar.gz
+    dest: /tmp/elasticsearch.tar.gz
+
+- name: Extract Elasticsearch tarball
+  unarchive:
+    src: /tmp/elasticsearch.tar.gz
+    dest: /opt/
+    remote_src: yes
+
+- name: Create symbolic link for Elasticsearch
+  file:
+    src: /opt/elasticsearch-8.10.2
+    dest: /opt/elasticsearch
+    state: link
+
+- name: Copy Elasticsearch service file
+  copy:
+    content: |
+      [Unit]
+      Description=Elasticsearch
+      Documentation=https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html
+      Wants=network-online.target
+      After=network-online.target
+
+      [Service]
+      User=root
+      ExecStart=/opt/elasticsearch/bin/elasticsearch
+      Restart=always
+      LimitNOFILE=65536
+
+      [Install]
+      WantedBy=multi-user.target
+    dest: /etc/systemd/system/elasticsearch.service
+
+- name: Reload systemd daemon
+  systemd:
+    daemon_reload: yes
+
+- name: Start and enable Elasticsearch
+  systemd:
+    name: elasticsearch
+    enabled: yes
+    state: started
